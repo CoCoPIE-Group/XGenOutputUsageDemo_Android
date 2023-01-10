@@ -9,5 +9,7 @@ public class CoCoPIEJNIExporter {
         }
     }
 
-    public static native float[] Run(float[] input);
+    public static native long Create(String pbPath, String dataPath);
+
+    public static native float[] Run(long engine, float[] input);
 }

@@ -1,5 +1,3 @@
-#include "xgen_data.h"
-#include "xgen_pb.h"
 #include "xgen.h"
 #include "src/main/cpp/inference_api.h"
 
@@ -27,6 +25,11 @@ public:
 
     XGenEngine(const unsigned char *model_base, size_t model_size, const unsigned char *extra_data, size_t data_size) {
         h = XGenInitWithData(model_base, model_size, extra_data, data_size);
+    }
+
+    XGenEngine(const char *model_file, const char *data_file) {
+        LOGI("model_file:%s data_file:%s", model_file, data_file);
+        h = XGenInitWithFiles(model_file, data_file, XGenPowerDefault);
     }
 
     ~XGenEngine() {
@@ -58,12 +61,23 @@ private:
     XGenHandle *h;
 };
 
-XGenEngine engine(d66b7555_cefa_4f_pb, d66b7555_cefa_4f_pb_len, d66b7555_cefa_4f_data, d66b7555_cefa_4f_data_len);
+static jlong jptr(XGenEngine *engine) {
+    return (jlong) engine;
+}
+
+static struct XGenEngine *native(jlong ptr) {
+    return (XGenEngine *) ptr;
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Create(JNIEnv *env, jclass instance, jstring pbPath, jstring dataPath) {
+    auto *engine = new XGenEngine(env->GetStringUTFChars(pbPath, nullptr), env->GetStringUTFChars(dataPath, nullptr));
+    return jptr(engine);
+}
 
 extern "C" JNIEXPORT jfloatArray JNICALL
-Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Run(JNIEnv *env,
-                                                                jclass instance,
-                                                                jfloatArray input) {
+Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Run(JNIEnv *env, jclass instance, jlong engine, jfloatArray input) {
+    XGenEngine *xgen = native(engine);
     jfloat *input_data = env->GetFloatArrayElements(input, JNI_FALSE);
-    return engine.RunInference(env, input_data);
+    return xgen->RunInference(env, input_data);
 }

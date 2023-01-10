@@ -22,10 +22,11 @@ typedef enum XGenType {
   XGenNone = 0,
   XGenFloat32 = 1,
   XGenFloat16 = 2,
-  XGenInt8 = 3,
-  XGenUInt8 = 4,
+  XGenInt32 = 3,
+  XGenInt8 = 4,
+  XGenUInt8 = 5,
 
-  XGenNumTypes = 5,
+  XGenNumTypes = 6,
 } XGenType;
 
 typedef enum XGenPowerPolicy {
@@ -39,6 +40,15 @@ typedef enum XGenPowerPolicy {
   /* Power save policy uses even less power than performance policy. */
   XGenPowerSave = 3,
 } XGenPowerPolicy;
+
+/**
+ * Initialize XGen in DeepOpt mode.
+ * Arguments, such as model_file, data_file and their lengths, can
+ * be found in generated *.pb and *.data respectively.
+ */
+XGEN_EXPORT XGenHandle *XGenInitWithFiles(const char *model_file,
+                                          const char *data_file,
+                                          XGenPowerPolicy policy = XGenPowerDefault);
 
 /**
  * Initialize XGen in DeepOpt mode.

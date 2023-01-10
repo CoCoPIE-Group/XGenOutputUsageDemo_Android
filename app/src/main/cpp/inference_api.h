@@ -7,10 +7,17 @@
 extern "C" {
 #endif
 
+JNIEXPORT jlong JNICALL
+Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Create(JNIEnv *env,
+                                                               jclass instance,
+                                                               jstring pbPath,
+                                                               jstring dataPath);
+
 JNIEXPORT jfloatArray JNICALL
 Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Run(JNIEnv *env,
-                                                                jclass instance,
-                                                                jfloatArray input);
+                                                            jclass instance,
+                                                            jlong engine,
+                                                            jfloatArray input);
 
 #ifdef __cplusplus
 }

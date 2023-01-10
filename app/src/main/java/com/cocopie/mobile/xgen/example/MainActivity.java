@@ -26,6 +26,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 
 public class MainActivity extends AppCompatActivity {
@@ -48,10 +49,12 @@ public class MainActivity extends AppCompatActivity {
     private float[] modelMean;
     private float[] modelStd;
 
+    private long sEngine = -1;
+
     private void initData() {
         labelCount = 10;
-        imageWidth = 32;
-        imageHeight = 32;
+        imageWidth = 224;
+        imageHeight = 224;
         imageChannel = 3;
         modelMean = new float[]{0.485f, 0.456f, 0.406f};
         modelStd = new float[]{0.229f, 0.224f, 0.225f};
@@ -76,6 +79,17 @@ public class MainActivity extends AppCompatActivity {
         });
         loopCountEdit = findViewById(R.id.loop_count);
         ActivityCompat.requestPermissions(MainActivity.this, mPermissionList, REQUEST_STORAGE_PERMISSION);
+
+        new Thread() {
+            @Override
+            public void run() {
+                String pbPath = new File(getCacheDir(), "efficient_b0__1_.pb").getAbsolutePath();
+                String dataPath = new File(getCacheDir(), "efficient_b0__1_.data").getAbsolutePath();
+                CoCoPIEUtils.copyAssetsFile(MainActivity.this, pbPath, "efficient_b0__1_.pb");
+                CoCoPIEUtils.copyAssetsFile(MainActivity.this, dataPath, "efficient_b0__1_.data");
+                sEngine = CoCoPIEJNIExporter.Create(pbPath, dataPath);
+            }
+        }.start();
     }
 
     @Override
@@ -108,7 +122,9 @@ public class MainActivity extends AppCompatActivity {
             max_loop_count = 1;
         }
         for (int i = 0; i < max_loop_count; i++) {
-            CoCoPIEUtils.RunModel(floatValues);
+            if (sEngine != -1) {
+                CoCoPIEUtils.RunModel(sEngine, floatValues);
+            }
         }
     }
 
@@ -124,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if (index >= 0) {
-            textView1.setText("Classification: " + CIFARLabels.LABEL10[index] + " (" + event.getData().costTime + " ms)");
+            textView1.setText("Classification: " + index + " (" + event.getData().costTime + " ms)");
         } else {
             textView1.setText("Detect error");
         }
