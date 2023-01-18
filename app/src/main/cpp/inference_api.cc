@@ -40,20 +40,34 @@ public:
     template<typename T>
     jfloatArray RunInference(JNIEnv *env, const T *input_data) {
         XGenTensor *input_tensor = XGenGetInputTensor(h, 0);
-        size_t input_size = XGenGetTensorSizeInBytes(input_tensor);
+        size_t input_size_in_bytes = XGenGetTensorSizeInBytes(input_tensor);
+        size_t input_size = input_size_in_bytes / sizeof(float);
         LOGI("input_size:%zu", input_size);
-        XGenCopyBufferToTensor(input_tensor, input_data, input_size);
+        auto buffer_nchw = std::shared_ptr<float>(new float[input_size], std::default_delete<float[]>());
+        int input_channel_size = input_size / 3;
+        for (int i = 0; i < input_channel_size; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                int src_idx = i * 3 + j;
+                int dst_idx = i + input_channel_size * j;
+                buffer_nchw.get()[dst_idx] = input_data[src_idx];
+            }
+        }
+        XGenCopyBufferToTensor(input_tensor, buffer_nchw.get(), input_size_in_bytes);
 
-        XGenRun(h);
+        if (XGenRun(h) != XGenOk) {
+            LOGI("FATAL ERROR: XGen inference failed.");
+            return nullptr;
+        }
 
         XGenTensor *output_tensor = XGenGetOutputTensor(h, 0);
-        size_t output_size = XGenGetTensorSizeInBytes(output_tensor);
+        size_t output_size_in_bytes = XGenGetTensorSizeInBytes(output_tensor);
+        size_t output_size = output_size_in_bytes / sizeof(float);
         LOGI("output_size:%zu", output_size);
-        auto output_data = std::shared_ptr<float>(new float[output_size / sizeof(float)], std::default_delete<float[]>());
-        XGenCopyTensorToBuffer(output_tensor, output_data.get(), output_size);
+        auto output_data = std::shared_ptr<float>(new float[output_size], std::default_delete<float[]>());
+        XGenCopyTensorToBuffer(output_tensor, output_data.get(), output_size_in_bytes);
 
-        jfloatArray jOutputData = env->NewFloatArray(output_size / sizeof(float));
-        env->SetFloatArrayRegion(jOutputData, 0, (jsize) output_size / sizeof(float), output_data.get());
+        jfloatArray jOutputData = env->NewFloatArray(output_size);
+        env->SetFloatArrayRegion(jOutputData, 0, (jsize) output_size, output_data.get());
         return jOutputData;
     }
 
