@@ -10,7 +10,6 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -52,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private long sEngine = -1;
 
     private void initData() {
-        labelCount = 10;
+        labelCount = 1000;
         imageWidth = 224;
         imageHeight = 224;
         imageChannel = 3;
@@ -83,10 +82,10 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             @Override
             public void run() {
-                String pbPath = new File(getCacheDir(), "efficient_b0__1_.pb").getAbsolutePath();
-                String dataPath = new File(getCacheDir(), "efficient_b0__1_.data").getAbsolutePath();
-                CoCoPIEUtils.copyAssetsFile(MainActivity.this, pbPath, "efficient_b0__1_.pb");
-                CoCoPIEUtils.copyAssetsFile(MainActivity.this, dataPath, "efficient_b0__1_.data");
+                String pbPath = new File(getCacheDir(), "efficientnet_b0_ra_3dd342df.pb").getAbsolutePath();
+                String dataPath = new File(getCacheDir(), "efficientnet_b0_ra_3dd342df.data").getAbsolutePath();
+                CoCoPIEUtils.copyAssetsFile(MainActivity.this, pbPath, "efficientnet_b0_ra_3dd342df.pb");
+                CoCoPIEUtils.copyAssetsFile(MainActivity.this, dataPath, "efficientnet_b0_ra_3dd342df.data");
                 sEngine = CoCoPIEJNIExporter.Create(pbPath, dataPath);
             }
         }.start();
