@@ -4,11 +4,11 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import android.util.SparseArray
 import android.view.Window
 import android.view.WindowManager
@@ -22,6 +22,13 @@ import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONObject
+import org.opencv.android.BaseLoaderCallback
+import org.opencv.android.LoaderCallbackInterface
+import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils
+import org.opencv.core.Mat
+import org.opencv.core.Size
+import org.opencv.imgproc.Imgproc
 import java.io.File
 import java.io.FileNotFoundException
 
@@ -41,13 +48,15 @@ class MainActivity : AppCompatActivity() {
     private var sEngine: Long = -1
     private val labelsMap = SparseArray<String>()
 
-    private fun initData() {
-        labelCount = 1000
-        imageWidth = 224
-        imageHeight = 224
-        imageChannel = 3
-        modelMean = floatArrayOf(0.485f, 0.456f, 0.406f)
-        modelStd = floatArrayOf(0.229f, 0.224f, 0.225f)
+    private val loaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
+        override fun onManagerConnected(status: Int) {
+            when (status) {
+                SUCCESS -> {
+                    Log.i("MainActivity", "OpenCV loaded successfully")
+                }
+                else -> super.onManagerConnected(status)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,6 +101,26 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
+    private fun initData() {
+        labelCount = 1000
+        imageWidth = 224
+        imageHeight = 224
+        imageChannel = 3
+        modelMean = floatArrayOf(0.485f, 0.456f, 0.406f)
+        modelStd = floatArrayOf(0.229f, 0.224f, 0.225f)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!OpenCVLoader.initDebug()) {
+            Log.d("MainActivity", "Internal OpenCV library not found. Using OpenCV Manager for initialization")
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, loaderCallback)
+        } else {
+            Log.d("MainActivity", "OpenCV library found inside package. Using it!")
+            loaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
+        }
     }
 
     override fun onStart() {
@@ -162,7 +191,16 @@ class MainActivity : AppCompatActivity() {
                 if (data != null) {
                     try {
                         val bitmap = BitmapFactory.decodeStream(contentResolver.openInputStream(data.data!!))
-                        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, imageWidth, imageHeight, true)
+
+                        // Imgproc.resize is better than Bitmap.createScaledBitmap
+                        val src = Mat()
+                        Utils.bitmapToMat(bitmap, src)
+                        val scaled = Mat()
+                        Imgproc.resize(src, scaled, Size(imageWidth.toDouble(), imageHeight.toDouble()), 0.0, 0.0, Imgproc.INTER_CUBIC)
+                        val scaledBitmap = Bitmap.createBitmap(scaled.width(), scaled.height(), Bitmap.Config.ARGB_8888)
+                        Utils.matToBitmap(scaled, scaledBitmap)
+//                        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, imageWidth, imageHeight, true)
+
                         val handlerThread = HandlerThread("PreProcess")
                         handlerThread.start()
                         val handler = Handler(handlerThread.looper)

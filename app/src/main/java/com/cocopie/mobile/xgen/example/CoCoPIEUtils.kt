@@ -1,6 +1,7 @@
 package com.cocopie.mobile.xgen.example
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import org.greenrobot.eventbus.EventBus
 import java.io.File
@@ -55,5 +56,12 @@ object CoCoPIEUtils {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+}
+
+fun File.writeBitmap(bitmap: Bitmap, format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG, quality: Int = 100) {
+    outputStream().use { out ->
+        bitmap.compress(format, quality, out)
+        out.flush()
     }
 }
