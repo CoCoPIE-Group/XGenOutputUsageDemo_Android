@@ -1,2 +1,3 @@
-include ':app'
 rootProject.name = "CoCoPIEApiExample"
+include ':app'
+include ':lib_ezdownload'
