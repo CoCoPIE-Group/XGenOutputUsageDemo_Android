@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textView2: TextView
     private lateinit var loopCountEdit: EditText
 
+    private val labelsMap = SparseArray<String>()
     private var labelCount = 0
     private var imageWidth = 0
     private var imageHeight = 0
@@ -46,7 +47,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var modelMean: FloatArray
     private lateinit var modelStd: FloatArray
     private var sEngine: Long = -1
-    private val labelsMap = SparseArray<String>()
 
     private val loaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -78,6 +78,19 @@ class MainActivity : AppCompatActivity() {
         loopCountEdit = findViewById(R.id.loop_count)
         ActivityCompat.requestPermissions(this@MainActivity, mPermissionList, REQUEST_STORAGE_PERMISSION)
 
+        initModel()
+    }
+
+    private fun initData() {
+        labelCount = 1000
+        imageWidth = 224
+        imageHeight = 224
+        imageChannel = 3
+        modelMean = floatArrayOf(0.485f, 0.456f, 0.406f)
+        modelStd = floatArrayOf(0.229f, 0.224f, 0.225f)
+    }
+
+    private fun initModel() {
         object : Thread() {
             override fun run() {
                 val labelsFile = File(cacheDir, "imagenet_labels_1000.json")
@@ -101,15 +114,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
-    }
-
-    private fun initData() {
-        labelCount = 1000
-        imageWidth = 224
-        imageHeight = 224
-        imageChannel = 3
-        modelMean = floatArrayOf(0.485f, 0.456f, 0.406f)
-        modelStd = floatArrayOf(0.229f, 0.224f, 0.225f)
     }
 
     override fun onResume() {
