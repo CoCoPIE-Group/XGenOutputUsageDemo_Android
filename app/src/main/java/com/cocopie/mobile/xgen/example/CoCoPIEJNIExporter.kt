@@ -1,15 +1,15 @@
-package com.cocopie.mobile.xgen.example;
+package com.cocopie.mobile.xgen.example
 
-public class CoCoPIEJNIExporter {
-    static {
+object CoCoPIEJNIExporter {
+
+    init {
         try {
-            System.loadLibrary("inference_api_jni");
-        } catch (Exception e) {
-            e.printStackTrace();
+            System.loadLibrary("inference_api_jni")
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    public static native long Create(String pbPath, String dataPath);
-
-    public static native float[] Run(long engine, float[] input);
+    external fun Create(pbPath: String?, dataPath: String?): Long
+    external fun Run(engine: Long, input: FloatArray?): FloatArray?
 }

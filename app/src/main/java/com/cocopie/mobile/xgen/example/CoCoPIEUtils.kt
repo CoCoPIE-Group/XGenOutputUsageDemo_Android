@@ -1,66 +1,59 @@
-package com.cocopie.mobile.xgen.example;
+package com.cocopie.mobile.xgen.example
 
-import android.content.Context;
-import android.os.Environment;
-import android.util.Log;
+import android.content.Context
+import android.util.Log
+import org.greenrobot.eventbus.EventBus
+import java.io.File
+import java.io.FileOutputStream
+import java.util.*
 
-import org.greenrobot.eventbus.EventBus;
+object CoCoPIEUtils {
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.util.Arrays;
-
-public class CoCoPIEUtils {
-
-    private CoCoPIEUtils() {
-    }
-
-    public static void RunModel(long engine, final float[] input) {
-        long start = System.currentTimeMillis();
-        float[] result = CoCoPIEJNIExporter.Run(engine, input);
-        if (result == null || result.length == 0) {
-            return;
+    fun RunModel(engine: Long, input: FloatArray?) {
+        val start = System.currentTimeMillis()
+        val result = CoCoPIEJNIExporter.Run(engine, input)
+        if (result == null || result.isEmpty()) {
+            return
         }
-        Log.e("CoCoPIEUtils", "Output:" + Arrays.toString(result));
-        long costTime = System.currentTimeMillis() - start;
-        WDSROutputResult outputResult = new WDSROutputResult(input, result, costTime);
-        EventBus.getDefault().post(new WDSROutputEvent(outputResult));
+        Log.e("CoCoPIEUtils", "Output:" + Arrays.toString(result))
+        val costTime = System.currentTimeMillis() - start
+        val outputResult = WDSROutputResult(input, result, costTime)
+        EventBus.getDefault().post(WDSROutputEvent(outputResult))
     }
 
-    public static void copyAssetsFile(Context context, String dstPath, String srcPath) {
-        if (new File(dstPath).exists()) {
-            return;
+    fun copyAssetsFile(context: Context, dstPath: String, srcPath: String) {
+        if (File(dstPath).exists()) {
+            return
         }
         try {
-            String[] fileNames = context.getAssets().list(srcPath);
-            if (fileNames.length > 0) {
-                File file = new File(dstPath);
+            val fileNames = context.assets.list(srcPath)
+            if (!fileNames.isNullOrEmpty()) {
+                val file = File(dstPath)
                 if (!file.exists()) {
-                    file.mkdirs();
+                    file.mkdirs()
                 }
-                for (String fileName : fileNames) {
-                    if (!srcPath.equals("")) { // assets 文件夹下的目录
-                        copyAssetsFile(context, srcPath + File.separator + fileName, dstPath + File.separator + fileName);
+                for (fileName in fileNames) {
+                    if (srcPath != "") { // assets 文件夹下的目录
+                        copyAssetsFile(context, srcPath + File.separator + fileName, dstPath + File.separator + fileName)
                     } else { // assets 文件夹
-                        copyAssetsFile(context, fileName, dstPath + File.separator + fileName);
+                        copyAssetsFile(context, fileName, dstPath + File.separator + fileName)
                     }
                 }
             } else {
-                File outFile = new File(dstPath);
-                InputStream is = context.getAssets().open(srcPath);
-                FileOutputStream fos = new FileOutputStream(outFile);
-                byte[] buffer = new byte[1024];
-                int byteCount;
-                while ((byteCount = is.read(buffer)) != -1) {
-                    fos.write(buffer, 0, byteCount);
+                val outFile = File(dstPath)
+                val `is` = context.assets.open(srcPath)
+                val fos = FileOutputStream(outFile)
+                val buffer = ByteArray(1024)
+                var byteCount: Int
+                while (`is`.read(buffer).also { byteCount = it } != -1) {
+                    fos.write(buffer, 0, byteCount)
                 }
-                fos.flush();
-                is.close();
-                fos.close();
+                fos.flush()
+                `is`.close()
+                fos.close()
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
