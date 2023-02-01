@@ -16,7 +16,12 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CoCoPIEApiExample">
+        android:theme="@style/Theme.CoCoPIEApiExample"
+        android:usesCleartextTraffic="true">
+
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
 
         <uses-native-library
             android:name="libOpenCL.so"

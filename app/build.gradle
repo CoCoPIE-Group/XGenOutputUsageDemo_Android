@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace 'com.cocopie.mobile.xgen.example'
     compileSdkVersion 31
 
     defaultConfig {
@@ -60,14 +61,15 @@ android {
             jniLibs.srcDirs = ["src/main/jniLibs"]
         }
     }
-    namespace 'com.cocopie.mobile.xgen.example'
+
+    useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {
-    api project(':lib_ezdownload')
     implementation 'androidx.appcompat:appcompat:1.4.2'
     implementation 'com.google.android.material:material:1.6.1'
     implementation 'org.greenrobot:eventbus:3.1.1'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.quickbirdstudios:opencv:4.5.3.0'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
 }

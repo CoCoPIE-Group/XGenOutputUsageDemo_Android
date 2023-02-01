@@ -18,6 +18,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.cocopie.mobile.xgen.example.download.DownloadResult
+import com.cocopie.mobile.xgen.example.download.Downloader
+import com.cocopie.mobile.xgen.example.download.download
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -31,14 +40,24 @@ import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import java.io.File
 import java.io.FileNotFoundException
+import java.security.KeyManagementException
+import java.security.NoSuchAlgorithmException
+import java.security.SecureRandom
+import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSession
+import javax.net.ssl.X509TrustManager
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
     private lateinit var imageView1: ImageView
     private lateinit var textView1: TextView
     private lateinit var textView2: TextView
     private lateinit var loopCountEdit: EditText
 
+    private val labelsMap = SparseArray<String>()
     private var labelCount = 0
     private var imageWidth = 0
     private var imageHeight = 0
@@ -46,7 +65,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var modelMean: FloatArray
     private lateinit var modelStd: FloatArray
     private var sEngine: Long = -1
-    private val labelsMap = SparseArray<String>()
+
+    private var modelState = MutableStateFlow<Int>(STATE_IDLE)
 
     private val loaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -70,6 +90,14 @@ class MainActivity : AppCompatActivity() {
         textView2 = findViewById(R.id.text2)
         imageView1 = findViewById(R.id.image1)
         textView2.setOnClickListener {
+            if (modelState.value == STATE_DOWNLOAD_FAIL) {
+                initModel()
+                return@setOnClickListener
+            }
+            if (modelState.value != STATE_DOWNLOAD_SUCCESS) {
+                Toast.makeText(this, "Please wait, the model is downloading", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             intent.addCategory(Intent.CATEGORY_OPENABLE)
             intent.type = "image/*"
@@ -78,29 +106,23 @@ class MainActivity : AppCompatActivity() {
         loopCountEdit = findViewById(R.id.loop_count)
         ActivityCompat.requestPermissions(this@MainActivity, mPermissionList, REQUEST_STORAGE_PERMISSION)
 
-        object : Thread() {
-            override fun run() {
-                val labelsFile = File(cacheDir, "imagenet_labels_1000.json")
-                val pbFile = File(cacheDir, "efficientnet_b0_ra_3dd342df.pb")
-                val dataFile = File(cacheDir, "efficientnet_b0_ra_3dd342df.data")
-                CoCoPIEUtils.copyAssetsFile(this@MainActivity, labelsFile.absolutePath, "imagenet_labels_1000.json")
-                CoCoPIEUtils.copyAssetsFile(this@MainActivity, pbFile.absolutePath, "efficientnet_b0_ra_3dd342df.pb")
-                CoCoPIEUtils.copyAssetsFile(this@MainActivity, dataFile.absolutePath, "efficientnet_b0_ra_3dd342df.data")
-                sEngine = CoCoPIEJNIExporter.Create(pbFile.absolutePath, dataFile.absolutePath)
-
-                val labelsJson = labelsFile.readText()
-                val labelsObject = JSONObject(labelsJson)
-                val labelsData = labelsObject.optJSONArray("data")
-                if (labelsData != null) {
-                    for (i in 0 until labelsData.length()) {
-                        val labelObject = labelsData.optJSONObject(i)
-                        if (labelObject != null) {
-                            labelsMap.put(labelObject.getInt("Class ID"), labelObject.getString("Class Name"))
-                        }
-                    }
+        modelState.onEach {
+            when (it) {
+                STATE_IDLE, STATE_LOADING -> {
+                    textView2.text = "Model loading"
+                }
+                STATE_DOWNLOADING -> {
+                    textView2.text = "Model downloading"
+                }
+                STATE_DOWNLOAD_SUCCESS -> {
+                    textView2.text = "Choose photo"
+                }
+                STATE_DOWNLOAD_FAIL -> {
+                    textView2.text = "Model load fail"
                 }
             }
-        }.start()
+        }.launchIn(this)
+        initModel()
     }
 
     private fun initData() {
@@ -110,6 +132,79 @@ class MainActivity : AppCompatActivity() {
         imageChannel = 3
         modelMean = floatArrayOf(0.485f, 0.456f, 0.406f)
         modelStd = floatArrayOf(0.229f, 0.224f, 0.225f)
+    }
+
+    private fun initModel() {
+        object : Thread() {
+            override fun run() {
+                modelState.value = STATE_LOADING
+                val request: Request = Request.Builder()
+                    .url("https://xgen-install.cocopie.ai/app/models.json")
+                    .build()
+                val response = OK_HTTP_CLIENT.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string() ?: return
+                    val samplesArray = JSONObject(responseBody).optJSONArray("samples")
+                    if (samplesArray != null) {
+                        for (i in 0 until samplesArray.length()) {
+                            val sampleObject = samplesArray.optJSONObject(i)
+                            val sampleName = sampleObject.optString("name")
+//                            val sampleType = sampleObject.optString("type")
+                            launch {
+                                val labelsFile = File(filesDir, "$sampleName.json")
+                                val pbFile = File(filesDir, "$sampleName.pb")
+                                val dataFile = File(filesDir, "$sampleName.data")
+                                if (!labelsFile.exists() || !pbFile.exists() || !dataFile.exists()) {
+                                    modelState.value = STATE_DOWNLOADING
+                                    val urls = sampleObject.optJSONObject("urls")
+                                    if (urls != null) {
+                                        val labelsUrl = urls.optString("labels")
+                                        val pdUrl = urls.optString("pb")
+                                        val dataUrl = urls.optString("data")
+                                        val labelDownload = async {
+                                            DOWNLOADER.download(NNFile(labelsUrl, labelsFile.absolutePath))
+                                        }
+                                        val pbDownload = async {
+                                            DOWNLOADER.download(NNFile(pdUrl, pbFile.absolutePath))
+                                        }
+                                        val dataDownload = async {
+                                            DOWNLOADER.download(NNFile(dataUrl, dataFile.absolutePath))
+                                        }
+                                        val result = awaitAll(labelDownload, pbDownload, dataDownload)
+                                        if (result.all { it.state == DownloadResult.STATE_FINISHED }) {
+                                            loadModel(labelsFile, pbFile, dataFile)
+                                            modelState.value = STATE_DOWNLOAD_SUCCESS
+                                        } else {
+                                            modelState.value = STATE_DOWNLOAD_FAIL
+                                        }
+                                    } else {
+                                        modelState.value = STATE_DOWNLOAD_FAIL
+                                    }
+                                } else {
+                                    loadModel(labelsFile, pbFile, dataFile)
+                                    modelState.value = STATE_DOWNLOAD_SUCCESS
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }.start()
+    }
+
+    private fun loadModel(labelsFile: File, pbFile: File, dataFile: File) {
+        sEngine = CoCoPIEJNIExporter.Create(pbFile.absolutePath, dataFile.absolutePath)
+        val labelsJson = labelsFile.readText()
+        val labelsObject = JSONObject(labelsJson)
+        val labelsData = labelsObject.optJSONArray("data")
+        if (labelsData != null) {
+            for (j in 0 until labelsData.length()) {
+                val labelObject = labelsData.optJSONObject(j)
+                if (labelObject != null) {
+                    labelsMap.put(labelObject.getInt("Class ID"), labelObject.getString("Class Name"))
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -134,6 +229,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun PreProcess(bitmap: Bitmap) {
+        Log.e("MainActivity", "PreProcess")
         val intValues = IntArray(imageHeight * imageWidth)
         val floatValues = FloatArray(imageHeight * imageWidth * imageChannel)
         bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
@@ -157,6 +253,7 @@ class MainActivity : AppCompatActivity() {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun PostProcess(event: WDSROutputEvent) {
+        Log.e("MainActivity", "PostProcess")
         val accuracy = event.data.pixels
         var maxAccu = Float.NEGATIVE_INFINITY
         var index = -1
@@ -217,6 +314,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        cancel()
+    }
+
     companion object {
         private const val REQUEST_PICK_IMAGE = 11101
         private const val REQUEST_STORAGE_PERMISSION = 100
@@ -224,5 +326,42 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_EXTERNAL_STORAGE
         )
+
+        private val OK_HTTP_CLIENT = OkHttpClient.Builder()
+            .callTimeout(15000, TimeUnit.MILLISECONDS)
+            .apply {
+                val trustManager: X509TrustManager = object : X509TrustManager {
+                    @Throws(CertificateException::class)
+                    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
+                    }
+
+                    @Throws(CertificateException::class)
+                    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
+                    }
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate?> {
+                        return arrayOfNulls(0)
+                    }
+                }
+                try {
+                    val sslContext = SSLContext.getInstance("TLS")
+                    sslContext.init(null, arrayOf(trustManager), SecureRandom())
+                    sslSocketFactory(sslContext.socketFactory, trustManager)
+                } catch (e: NoSuchAlgorithmException) {
+                    e.printStackTrace()
+                } catch (e: KeyManagementException) {
+                    e.printStackTrace()
+                }
+                hostnameVerifier { _: String?, _: SSLSession? -> true }
+            }
+            .build()
+
+        private val DOWNLOADER = Downloader(okHttpClient = OK_HTTP_CLIENT)
+
+        private const val STATE_IDLE = 0
+        private const val STATE_LOADING = 1
+        private const val STATE_DOWNLOADING = 2
+        private const val STATE_DOWNLOAD_FAIL = 3
+        private const val STATE_DOWNLOAD_SUCCESS = 4
     }
 }
