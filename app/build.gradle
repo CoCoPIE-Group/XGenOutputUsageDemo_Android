@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace 'com.cocopie.mobile.xgen.example'
     compileSdkVersion 31
 
     defaultConfig {
@@ -60,7 +61,6 @@ android {
             jniLibs.srcDirs = ["src/main/jniLibs"]
         }
     }
-    namespace 'com.cocopie.mobile.xgen.example'
 }
 
 dependencies {
