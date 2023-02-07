@@ -1,12 +1,12 @@
 ## 1 Introduction
 
-Integration XGen output to android app demo
+This is an Android demo app to show how to integrate the output of XGen into an android app.
 
 ## 2 SDK Usage
 
 #### 2.1 Import XGen SDK
 
-Put '**xgen.h**', '**xgen_data.h**', '**xgen_pb.h**', '**libxgen.so**' into the corresponding directory of the project, and then modify **CMakeLists.txt** script
+Put '**xgen.h**', '**xgen_data.h**', '**xgen_pb.h**', '**libxgen.so**' into the corresponding directory of the project, and then modify **CMakeLists.txt** script. 
 
 #### 2.2 Initialize XGen
 
@@ -35,7 +35,7 @@ The input data is preprocessed according to the model parameters. Here is an exa
 
 #### 2.4 Run XGen
 
-Call the *XGenCopyBufferToTensor* method to pass the preprocessed data into XGen, and then call the *XGenRun* method to run XGen
+Call the *XGenCopyBufferToTensor* method to pass the preprocessed data into XGen runtime, and then call the *XGenRun* method to let XGen runtime call the AI model to conduct an inference.
 
 ``` c
   jfloat *input_data = env->GetFloatArrayElements(input, JNI_FALSE);
@@ -47,9 +47,9 @@ Call the *XGenCopyBufferToTensor* method to pass the preprocessed data into XGen
   XGenRun(h);
 ```
 
-#### 2.5 Get XGen output
+#### 2.5 Use the AI model through XGen runtime
 
-Call the *XGenCopyTensorToBuffer* method to get the output of XGen, which is a float array of length 10 in the CIFAR10 example
+Call the *XGenCopyTensorToBuffer* method to copy the result into a butter, which is a float array of length 10 in the CIFAR10 example
 
 ``` c
   XGenTensor *output_tensor = XGenGetOutputTensor(h, 0);
