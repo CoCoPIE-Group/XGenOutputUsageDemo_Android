@@ -13,32 +13,32 @@ typedef struct XGenHandle XGenHandle;
 typedef struct XGenTensor XGenTensor;
 
 typedef enum XGenStatus {
-  XGenOk = 0,
-  XGenError = 1,
-  XGenLicenseExpired = 2,
+    XGenOk = 0,
+    XGenError = 1,
+    XGenLicenseExpired = 2,
 } XGenStatus;
 
 typedef enum XGenType {
-  XGenNone = 0,
-  XGenFloat32 = 1,
-  XGenFloat16 = 2,
-  XGenInt32 = 3,
-  XGenInt8 = 4,
-  XGenUInt8 = 5,
+    XGenNone = 0,
+    XGenFloat32 = 1,
+    XGenFloat16 = 2,
+    XGenInt32 = 3,
+    XGenInt8 = 4,
+    XGenUInt8 = 5,
 
-  XGenNumTypes = 6,
+    XGenNumTypes = 6,
 } XGenType;
 
 typedef enum XGenPowerPolicy {
-  /* No power policy. Use whatever system default configuration is. */
-  XGenPowerNone = 0,
-  /* Default power policy is used with XGenInitWithData */
-  XGenPowerDefault = 1,
-  /* Performance policy uses less power than the default but still performs
-     well. */
-  XGenPowerPerformance = 2,
-  /* Power save policy uses even less power than performance policy. */
-  XGenPowerSave = 3,
+    /* No power policy. Use whatever system default configuration is. */
+    XGenPowerNone = 0,
+    /* Default power policy is used with XGenInitWithData */
+    XGenPowerDefault = 1,
+    /* Performance policy uses less power than the default but still performs
+       well. */
+    XGenPowerPerformance = 2,
+    /* Power save policy uses even less power than performance policy. */
+    XGenPowerSave = 3,
 } XGenPowerPolicy;
 
 /**
@@ -87,6 +87,14 @@ XGEN_EXPORT XGenHandle *XGenInit(const void *model_data, size_t model_size);
  */
 XGEN_EXPORT XGenHandle *XGenInitWithCPUOnly(const void *model_data,
                                             size_t model_size);
+
+/**
+ * Initialize XGen with model files.
+ * In Fallback mode, data_path should be nullptr. The lifetime
+ * of the `model_data` must be at least as long as the lifetime of
+ * returned `XGenHandle`
+ */
+XGEN_EXPORT XGenHandle *XGenInitWithFallbackFiles(const char *model_path);
 
 /**
  * Run the model.

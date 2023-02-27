@@ -93,12 +93,14 @@ class MainActivity : AppCompatActivity() {
     private fun initModel() {
         object : Thread() {
             override fun run() {
+                val mobilev2 = "mobilev2_half_opt"
+                val model = mobilev2
                 val labelsFile = File(cacheDir, "imagenet_labels_1000.json")
-                val pbFile = File(cacheDir, "efficientnet_b0_ra_3dd342df.pb")
-                val dataFile = File(cacheDir, "efficientnet_b0_ra_3dd342df.data")
+                val pbFile = File(cacheDir, "${model}.pb")
+                val dataFile = File(cacheDir, "${model}.data")
                 CoCoPIEUtils.copyAssetsFile(this@MainActivity, labelsFile.absolutePath, "imagenet_labels_1000.json")
-                CoCoPIEUtils.copyAssetsFile(this@MainActivity, pbFile.absolutePath, "efficientnet_b0_ra_3dd342df.pb")
-                CoCoPIEUtils.copyAssetsFile(this@MainActivity, dataFile.absolutePath, "efficientnet_b0_ra_3dd342df.data")
+                CoCoPIEUtils.copyAssetsFile(this@MainActivity, pbFile.absolutePath, "${model}.pb")
+                CoCoPIEUtils.copyAssetsFile(this@MainActivity, dataFile.absolutePath, "${model}.data")
                 sEngine = CoCoPIEJNIExporter.Create(pbFile.absolutePath, dataFile.absolutePath)
 
                 val labelsJson = labelsFile.readText()
