@@ -193,7 +193,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     }
 
     private fun loadModel(labelsFile: File, pbFile: File, dataFile: File) {
-        sEngine = CoCoPIEJNIExporter.Create(pbFile.absolutePath, dataFile.absolutePath)
+        sEngine = CoCoPIEJNIExporter.CreateOpt(pbFile.absolutePath, dataFile.absolutePath)
         val labelsJson = labelsFile.readText()
         val labelsObject = JSONObject(labelsJson)
         val labelsData = labelsObject.optJSONArray("data")
