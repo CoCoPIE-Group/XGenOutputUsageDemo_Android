@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
                 CoCoPIEUtils.copyAssetsFile(this@MainActivity, labelsFile.absolutePath, "imagenet_labels_1000.json")
                 CoCoPIEUtils.copyAssetsFile(this@MainActivity, pbFile.absolutePath, "${model}.pb")
                 CoCoPIEUtils.copyAssetsFile(this@MainActivity, dataFile.absolutePath, "${model}.data")
-                sEngine = CoCoPIEJNIExporter.Create(pbFile.absolutePath, dataFile.absolutePath)
+                sEngine = CoCoPIEJNIExporter.CreateOpt(pbFile.absolutePath, dataFile.absolutePath)
 
                 val labelsJson = labelsFile.readText()
                 val labelsObject = JSONObject(labelsJson)
