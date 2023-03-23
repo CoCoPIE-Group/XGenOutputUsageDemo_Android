@@ -13,32 +13,42 @@ typedef struct XGenHandle XGenHandle;
 typedef struct XGenTensor XGenTensor;
 
 typedef enum XGenStatus {
-  XGenOk = 0,
-  XGenError = 1,
-  XGenLicenseExpired = 2,
+    XGenOk = 0,
+    XGenError = 1,
+    XGenLicenseExpired = 2,
 } XGenStatus;
 
 typedef enum XGenType {
-  XGenNone = 0,
-  XGenFloat32 = 1,
-  XGenFloat16 = 2,
-  XGenInt8 = 3,
-  XGenUInt8 = 4,
+    XGenNone = 0,
+    XGenFloat32 = 1,
+    XGenFloat16 = 2,
+    XGenInt32 = 3,
+    XGenInt8 = 4,
+    XGenUInt8 = 5,
 
-  XGenNumTypes = 5,
+    XGenNumTypes = 6,
 } XGenType;
 
 typedef enum XGenPowerPolicy {
-  /* No power policy. Use whatever system default configuration is. */
-  XGenPowerNone = 0,
-  /* Default power policy is used with XGenInitWithData */
-  XGenPowerDefault = 1,
-  /* Performance policy uses less power than the default but still performs
-     well. */
-  XGenPowerPerformance = 2,
-  /* Power save policy uses even less power than performance policy. */
-  XGenPowerSave = 3,
+    /* No power policy. Use whatever system default configuration is. */
+    XGenPowerNone = 0,
+    /* Default power policy is used with XGenInitWithData */
+    XGenPowerDefault = 1,
+    /* Performance policy uses less power than the default but still performs
+       well. */
+    XGenPowerPerformance = 2,
+    /* Power save policy uses even less power than performance policy. */
+    XGenPowerSave = 3,
 } XGenPowerPolicy;
+
+/**
+ * Initialize XGen in DeepOpt mode.
+ * Arguments, such as model_file, data_file and their lengths, can
+ * be found in generated *.pb and *.data respectively.
+ */
+XGEN_EXPORT XGenHandle *XGenInitWithFiles(const char *model_file,
+                                          const char *data_file,
+                                          XGenPowerPolicy policy = XGenPowerDefault);
 
 /**
  * Initialize XGen in DeepOpt mode.
@@ -78,6 +88,13 @@ XGEN_EXPORT XGenHandle *XGenInit(const void *model_data, size_t model_size);
 XGEN_EXPORT XGenHandle *XGenInitWithCPUOnly(const void *model_data,
                                             size_t model_size);
 
+/**
+ * Initialize XGen with model files.
+ * In Fallback mode, data_path should be nullptr. The lifetime
+ * of the `model_data` must be at least as long as the lifetime of
+ * returned `XGenHandle`
+ */
+XGEN_EXPORT XGenHandle *XGenInitWithFallbackFiles(const char *model_path);
 /**
  * Run the model.
  */
