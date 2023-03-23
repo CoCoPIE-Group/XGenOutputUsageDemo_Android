@@ -10,6 +10,7 @@ object CoCoPIEJNIExporter {
         }
     }
 
-    external fun Create(pbPath: String?, dataPath: String?): Long
+    external fun CreateOpt(pbPath: String?, dataPath: String?): Long
+    external fun CreateFallback(fallbackPath: String?): Long
     external fun Run(engine: Long, input: FloatArray?): FloatArray?
 }

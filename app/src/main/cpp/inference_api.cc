@@ -27,9 +27,14 @@ public:
         h = XGenInitWithData(model_base, model_size, extra_data, data_size);
     }
 
-    XGenEngine(const char *model_file, const char *data_file) {
-        LOGI("model_file:%s data_file:%s", model_file, data_file);
-        h = XGenInitWithFiles(model_file, data_file, XGenPowerDefault);
+    XGenEngine(const char *pb_file, const char *data_file) {
+        LOGI("pb_file:%s data_file:%s", pb_file, data_file);
+        h = XGenInitWithFiles(pb_file, data_file, XGenPowerDefault);
+    }
+
+    XGenEngine(const char *fallback_file) {
+        LOGI("fallback_file:%s", fallback_file);
+        h = XGenInitWithFallbackFiles(fallback_file);
     }
 
     ~XGenEngine() {
@@ -84,13 +89,19 @@ static struct XGenEngine *native(jlong ptr) {
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Create(JNIEnv *env, jclass instance, jstring pbPath, jstring dataPath) {
+Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_CreateOpt(JNIEnv *env, jobject instance, jstring pbPath, jstring dataPath) {
     auto *engine = new XGenEngine(env->GetStringUTFChars(pbPath, nullptr), env->GetStringUTFChars(dataPath, nullptr));
     return jptr(engine);
 }
 
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_CreateFallback(JNIEnv *env, jobject instance, jstring fallbackPath) {
+    auto *engine = new XGenEngine(env->GetStringUTFChars(fallbackPath, nullptr));
+    return jptr(engine);
+}
+
 extern "C" JNIEXPORT jfloatArray JNICALL
-Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Run(JNIEnv *env, jclass instance, jlong engine, jfloatArray input) {
+Java_com_cocopie_mobile_xgen_example_CoCoPIEJNIExporter_Run(JNIEnv *env, jobject instance, jlong engine, jfloatArray input) {
     XGenEngine *xgen = native(engine);
     jfloat *input_data = env->GetFloatArrayElements(input, JNI_FALSE);
     return xgen->RunInference(env, input_data);
