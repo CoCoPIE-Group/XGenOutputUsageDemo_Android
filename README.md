@@ -1,65 +1,84 @@
 ## 1 Introduction
 
-Integration XGen output to android app demo
+This is an Android demo app to show how to integrate the output of XGen into an android app.
 
-## 2 SDK Usage
+## 2 Integration of XGen output into an app
+
+Readers can see `app/src/main/cpp/inference_api.cc` to see how the output of XGen is used in an app for AI. This part gives the explanation.
 
 #### 2.1 Import XGen SDK
 
-Put '**xgen.h**', '**xgen_data.h**', '**xgen_pb.h**', '**libxgen.so**' into the corresponding directory of the project, and then modify **CMakeLists.txt** script
+Put '**xgen.h**', '**{model name}.tflite**', '**libxgen.so**' into the corresponding directory of the project, and then modify **CMakeLists.txt** script.
 
 #### 2.2 Initialize XGen
 
-Call the *XGenInitWithData* method to initialize XGen, the required parameters can be found in '**xgen_data.h**' and '**xgen_pb.h**'
+Call the _XGenInitWithFallbackFiles_ method to initialize XGen.
 
 #### 2.3 Input data preprocessing
 
-The input data is preprocessed according to the model parameters. Here is an example of preprocessing the input image when using the CIFAR10 dataset.
+The input data is preprocessed according to the model parameters. Here is an example of preprocessing the input image when using the mobilenet model.
 
-``` java
-  int imageWidth = 32;
-  int imageHeight = 32;
-  int imageChannel = 3;
-  float[] modelMean = new float[]{0.485f, 0.456f, 0.406f};
-  float[] modelStd = new float[]{0.229f, 0.224f, 0.225f};
-  int[] intValues = new int[imageHeight * imageWidth];
-  float[] floatValues = new float[imageHeight * imageWidth * imageChannel];
-  bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-  int idx = 0;
-  for (int value : intValues) {
-    floatValues[idx++] = (((value >> 16) & 0xFF) / 255.f - modelMean[0]) / modelStd[0];
-    floatValues[idx++] = (((value >> 8) & 0xFF) / 255.f - modelMean[1]) / modelStd[1];
-    floatValues[idx++] = ((value & 0xFF) / 255.f - modelMean[2]) / modelStd[2];
-  }
+```java
+  int imageWidth = 224;
+        int imageHeight = 224;
+        int imageChannel = 3;
+        float[] modelMean = new float[]{0.485f, 0.456f, 0.406f};
+        float[] modelStd = new float[]{0.229f, 0.224f, 0.225f};
+        int[] intValues = new int[imageHeight * imageWidth];
+        float[] floatValues = new float[imageHeight * imageWidth * imageChannel];
+        bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        int idx = 0;
+        for (int value : intValues) {
+        floatValues[idx++] = (((value >> 16) & 0xFF) / 255.f - modelMean[0]) / modelStd[0];
+        floatValues[idx++] = (((value >> 8) & 0xFF) / 255.f - modelMean[1]) / modelStd[1];
+        floatValues[idx++] = ((value & 0xFF) / 255.f - modelMean[2]) / modelStd[2];
+        }
 ```
 
 #### 2.4 Run XGen
 
-Call the *XGenCopyBufferToTensor* method to pass the preprocessed data into XGen, and then call the *XGenRun* method to run XGen
+Call the _XGenCopyBufferToTensor_ method to pass the preprocessed data into XGen runtime, and then call the _XGenRun_ method to let XGen runtime call the AI model to conduct an inference.
 
-``` c
-  jfloat *input_data = env->GetFloatArrayElements(input, JNI_FALSE);
-  
+```c
   XGenTensor *input_tensor = XGenGetInputTensor(h, 0);
-  size_t input_size = XGenGetTensorSizeInBytes(input_tensor);
-  XGenCopyBufferToTensor(input_tensor, input_data, input_size);
+  size_t input_size_in_bytes = XGenGetTensorSizeInBytes(input_tensor);
+  size_t input_size = input_size_in_bytes / sizeof(float);
+
+  auto buffer_nchw = std::shared_ptr<float>(new float[input_size], std::default_delete<float[]>());
+  int input_channel_size = input_size / 3;
+  for (int i = 0; i < input_channel_size; ++i) {
+      for (int j = 0; j < 3; ++j) {
+          int src_idx = i * 3 + j;
+          int dst_idx = i + input_channel_size * j;
+          buffer_nchw.get()[dst_idx] = input_data[src_idx];
+      }
+  }
+  XGenCopyBufferToTensor(input_tensor, buffer_nchw.get(), input_size_in_bytes);
 
   XGenRun(h);
 ```
 
-#### 2.5 Get XGen output
+#### 2.5 Use the AI model through XGen runtime
 
-Call the *XGenCopyTensorToBuffer* method to get the output of XGen, which is a float array of length 10 in the CIFAR10 example
+Call the _XGenCopyTensorToBuffer_ method to copy the result into a butter, which is a float array of length 1000 in the mobilenet example
 
-``` c
+```c
   XGenTensor *output_tensor = XGenGetOutputTensor(h, 0);
-  size_t output_size = XGenGetTensorSizeInBytes(output_tensor);
-  auto output_data = std::shared_ptr<float>(new float[output_size / sizeof(float)], std::default_delete<float[]>());
-  XGenCopyTensorToBuffer(output_tensor, output_data.get(), output_size);
+  size_t output_size_in_bytes = XGenGetTensorSizeInBytes(output_tensor);
+  size_t output_size = output_size_in_bytes / sizeof(float);
 
-  jfloatArray jOutputData = env->NewFloatArray(output_size / sizeof(float));
-  env->SetFloatArrayRegion(jOutputData, 0, (jsize) output_size / sizeof(float), output_data.get());
+  auto output_data = std::shared_ptr<float>(new float[output_size], std::default_delete<float[]>());
+  XGenCopyTensorToBuffer(output_tensor, output_data.get(), output_size_in_bytes);
 ```
+
+#### 2.6 Performance comparison
+
+Faster and smaller model files with almost constant accuracy!
+
+| Model              | Top-1 Accuracy | Qualcomm 888(ms) | Size(MB) |
+| ------------------ | -------------- | ---------------- | -------- |
+| MobileNetV2-TFLite | 71.8           | 8                | 13.3     |
+| MobileNetV2-XGen   | 71.6           | 5.6              | 7.4      |
 
 ## 3 Copyright
 
