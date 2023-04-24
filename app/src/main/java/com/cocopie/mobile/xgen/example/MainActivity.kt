@@ -96,9 +96,9 @@ class MainActivity : AppCompatActivity() {
                 val mobilev2 = "mobilenet_v2_float"
                 val model = mobilev2
                 val labelsFile = File(cacheDir, "imagenet_labels_1000.json")
-                val fallbackFile = File(cacheDir, "${model}.fallback")
+                val fallbackFile = File(cacheDir, "${model}.tflite")
                 CoCoPIEUtils.copyAssetsFile(this@MainActivity, labelsFile.absolutePath, "imagenet_labels_1000.json")
-                CoCoPIEUtils.copyAssetsFile(this@MainActivity, fallbackFile.absolutePath, "${model}.fallback")
+                CoCoPIEUtils.copyAssetsFile(this@MainActivity, fallbackFile.absolutePath, "${model}.tflite")
                 sEngine = CoCoPIEJNIExporter.CreateFallback(fallbackFile.absolutePath)
 
                 val labelsJson = labelsFile.readText()
