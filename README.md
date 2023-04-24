@@ -75,10 +75,13 @@ Call the _XGenCopyTensorToBuffer_ method to copy the result into a butter, which
 
 Faster and smaller model files with almost constant accuracy!
 
-| Model              | Top-1 Accuracy | Qualcomm 888(ms) | Size(MB) |
-| ------------------ | -------------- | ---------------- | -------- |
-| MobileNetV2-TFLite | 71.8           | 8                | 13.3     |
-| MobileNetV2-XGen   | 71.6           | 5.6              | 7.4      |
+| Model                              | Top-1 Accuracy | # MACs | Terminal Latency (ms) | Demo FPS | Size (MB) |
+| ---------------------------------- | -------------- | ------ | --------------------- | -------- | --------- |
+| Original_TFLite(Pytorch, 1000 cls) | 71.8           | 300M   | 10.5                  | 96       | 13.3      |
+| Original_TFLite(MTK, 1000 cls)     | 71.8           | 300M   | 7.3                   | -        | -         |
+| Compressed_TFLite                  | 71.6           | 180M   | 8.4                   | 120      | 19.1      |
+| XGen_Auto                          | 64.158         | 210M   | 5.674                 | 110      | 7.5       |
+| XGen_Manual                        | 71.6           | 180M   | 6.594                 | 90       | 9.5       |
 
 ## 3 Copyright
 
