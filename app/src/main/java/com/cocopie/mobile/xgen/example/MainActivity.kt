@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     private fun initModel() {
         object : Thread() {
             override fun run() {
-                val mobilev2 = "mobilev2_half_opt"
+                val mobilev2 = "mobilev2_half_opt_auto"
                 val model = mobilev2
                 val labelsFile = File(cacheDir, "imagenet_labels_1000.json")
                 val pbFile = File(cacheDir, "${model}.pb")
