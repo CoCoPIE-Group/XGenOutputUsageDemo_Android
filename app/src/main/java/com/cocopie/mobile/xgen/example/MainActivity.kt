@@ -4,7 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity() {
                 SUCCESS -> {
                     Log.i("MainActivity", "OpenCV loaded successfully")
                 }
+
                 else -> super.onManagerConnected(status)
             }
         }
@@ -96,9 +98,9 @@ class MainActivity : AppCompatActivity() {
                 val mobilev2 = "mobilenet_v2_float"
                 val model = mobilev2
                 val labelsFile = File(cacheDir, "imagenet_labels_1000.json")
-                val fallbackFile = File(cacheDir, "${model}.tflite")
+                val fallbackFile = File(cacheDir, "${model}.fallback")
                 CoCoPIEUtils.copyAssetsFile(this@MainActivity, labelsFile.absolutePath, "imagenet_labels_1000.json")
-                CoCoPIEUtils.copyAssetsFile(this@MainActivity, fallbackFile.absolutePath, "${model}.tflite")
+                CoCoPIEUtils.copyAssetsFile(this@MainActivity, fallbackFile.absolutePath, "${model}.fallback")
                 sEngine = CoCoPIEJNIExporter.CreateFallback(fallbackFile.absolutePath)
 
                 val labelsJson = labelsFile.readText()
