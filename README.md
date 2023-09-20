@@ -26,25 +26,25 @@ Call the _XGenInitWithFiles_ method to initialize XGen.
 The input data is preprocessed according to the model parameters. Here is an example of preprocessing the input image when using the mobilenet model.
 
 ```kotlin
-    val intValues = IntArray(imageHeight * imageWidth)
-    val floatValues = FloatArray(imageHeight * imageWidth * imageChannel)
-    bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-    var idx = 0
-    for (value in intValues) {
-        floatValues[idx++] = ((value shr 16 and 0xFF) / 255f - modelMean[0]) / modelStd[0]
-        floatValues[idx++] = ((value shr 8 and 0xFF) / 255f - modelMean[1]) / modelStd[1]
-        floatValues[idx++] = ((value and 0xFF) / 255f - modelMean[2]) / modelStd[2]
+  val intValues = IntArray(imageHeight * imageWidth)
+  val floatValues = FloatArray(imageHeight * imageWidth * imageChannel)
+  bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+  var idx = 0
+  for (value in intValues) {
+    floatValues[idx++] = ((value shr 16 and 0xFF) / 255f - modelMean[0]) / modelStd[0]
+    floatValues[idx++] = ((value shr 8 and 0xFF) / 255f - modelMean[1]) / modelStd[1]
+    floatValues[idx++] = ((value and 0xFF) / 255f - modelMean[2]) / modelStd[2]
+  }
+  val maxLoopCount = try {
+    loopCountEdit.text.toString().toInt()
+  } catch (e: NumberFormatException) {
+    1
+  }
+  for (i in 0 until maxLoopCount) {
+    if (sEngine != -1L) {
+      CoCoPIEUtils.RunModel(sEngine, floatValues)
     }
-    val maxLoopCount = try {
-        loopCountEdit.text.toString().toInt()
-    } catch (e: NumberFormatException) {
-        1
-    }
-    for (i in 0 until maxLoopCount) {
-        if (sEngine != -1L) {
-            CoCoPIEUtils.RunModel(sEngine, floatValues)
-        }
-    }
+  }
 ```
 
 #### 2.4 Run XGen
