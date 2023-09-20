@@ -4,6 +4,8 @@ This is an Android demo app to show how to integrate the output of XGen into an 
 
 ## 2 Integration of XGen output into an app
 
+Please refer to [XGen Document](https://xgen.cocopie.ai/v1.3.0/5_Results/) for XGen generated files.
+
 Readers can see `app/src/main/cpp/inference_api.cc` to see how the output of XGen is used in an app for AI. This part gives the explanation.
 
 #### 2.1 Import XGen SDK
