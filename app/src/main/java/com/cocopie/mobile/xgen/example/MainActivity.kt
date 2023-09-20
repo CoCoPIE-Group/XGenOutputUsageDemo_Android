@@ -4,7 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity() {
                 SUCCESS -> {
                     Log.i("MainActivity", "OpenCV loaded successfully")
                 }
+
                 else -> super.onManagerConnected(status)
             }
         }
